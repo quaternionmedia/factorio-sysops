@@ -4,6 +4,9 @@
 
 local CircuitControl = {}
 
+local DataSystem = require("scripts.data-system")
+local TechnicalDebt = require("scripts.technical-debt")
+
 -- Control states for indicators
 CircuitControl.STATES = {
   NORMAL = "normal",           -- No circuit control (operating based on emergency_stop)
@@ -55,14 +58,28 @@ local function read_sensor_control_signal(sensor)
   return signal_value
 end
 
--- Apply control state to an assembler
-local function apply_assembler_control(assembler, should_be_active)
+-- entity.speed_bonus is assumed writable on assembling-machine entities (the
+-- same mechanism beacons/modules use internally). Guarded with pcall so a
+-- wrong assumption logs once instead of erroring every control tick.
+local warned_speed_bonus_unsupported = false
+
+-- Apply control state to an assembler: on/off via .active, and net IT
+-- efficiency (coverage bonus minus debt penalty, see CircuitControl.update())
+-- via .speed_bonus.
+local function apply_assembler_control(assembler, should_be_active, net_bonus)
   if not assembler or not assembler.valid then
     return
   end
 
-  -- Use the active property to enable/disable the assembler
   assembler.active = should_be_active
+
+  local ok = pcall(function()
+    assembler.speed_bonus = net_bonus or 0
+  end)
+  if not ok and not warned_speed_bonus_unsupported then
+    warned_speed_bonus_unsupported = true
+    log("[sysadmin-poc] entity.speed_bonus assignment failed -- IT efficiency bonus/penalty will not apply on this Factorio version.")
+  end
 end
 
 -- Update control for all sensors - called periodically
@@ -103,24 +120,23 @@ function CircuitControl.update()
         should_be_active = not storage.emergency_stop
       end
 
-      -- Apply to monitored assemblers under this sensor.
-      -- In NORMAL state, also apply the debt penalty: deterministically disable
-      -- assemblers whose unit_number falls below the penalty bucket threshold,
-      -- so higher debt silently stalls a larger fraction of production.
+      -- Apply to monitored assemblers under this sensor. Net efficiency is
+      -- one continuous curve: the IT coverage bonus (data-system.lua) minus
+      -- the debt penalty in NORMAL state. CIRCUIT_ENABLED keeps the coverage
+      -- bonus but is immune to the debt penalty, same immunity as before.
       if sensor_data.monitored_assemblers then
-        local penalty_bucket = 0
-        if new_state == CircuitControl.STATES.NORMAL then
-          penalty_bucket = math.floor((storage.debt_penalty_fraction or 0) * 100)
+        local net_bonus = 0
+        if should_be_active then
+          local coverage_bonus = DataSystem.get_coverage_bonus()
+          local debt_penalty = (new_state == CircuitControl.STATES.NORMAL)
+            and TechnicalDebt.get_penalty() or 0
+          net_bonus = coverage_bonus - debt_penalty
         end
 
         for assembler_id, _ in pairs(sensor_data.monitored_assemblers) do
           local assembler_data = storage.monitored_assemblers[assembler_id]
           if assembler_data and assembler_data.entity and assembler_data.entity.valid then
-            local active = should_be_active
-            if active and penalty_bucket > 0 then
-              active = (assembler_id % 100) >= penalty_bucket
-            end
-            apply_assembler_control(assembler_data.entity, active)
+            apply_assembler_control(assembler_data.entity, should_be_active, net_bonus)
           end
         end
       end
@@ -153,9 +169,12 @@ function CircuitControl.get_assembler_display_state(assembler_id)
   elseif storage.emergency_stop then
     return "stopped"
   else
-    -- Check if this assembler is debt-paused in NORMAL state
-    local penalty_bucket = math.floor((storage.debt_penalty_fraction or 0) * 100)
-    if penalty_bucket > 0 and (assembler_id % 100) < penalty_bucket then
+    -- "debt_paused" now means net-negative efficiency (debt penalty exceeds
+    -- the IT coverage bonus), not a literal pause -- name kept for minimal
+    -- ripple. Every NORMAL monitored assembler shares the same net_bonus
+    -- (see CircuitControl.update()), so this is a factory-wide state, not
+    -- a per-assembler one.
+    if TechnicalDebt.get_penalty() > DataSystem.get_coverage_bonus() then
       return "debt_paused"
     end
     return "active"

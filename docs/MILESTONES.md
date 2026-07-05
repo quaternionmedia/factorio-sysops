@@ -6,6 +6,15 @@ consequence-free: bad IT metrics currently cost nothing.
 
 These milestones close that loop and carry the mod to a v1.0 release.
 
+> **Update (2026-07-05):** Milestone 1 below assumed `data-system.lua` already
+> had a `calculate_efficiency_bonus()` to subtract a debt penalty from --
+> it didn't (checked off in docs/POC-CHECKLIST.md but never coded), so the
+> milestone as actually implemented substituted an unrelated mechanic
+> (probabilistically pausing a percentage of assemblers) with no positive
+> counterpart. Both the missing bonus and a continuous (non-pausing) penalty
+> are now implemented together -- see docs/05-MECHANICS.md's Bonus
+> Calculation section for the actual formula in place of the sketch below.
+
 ---
 
 ## Pre-work: Performance Baseline

@@ -58,10 +58,25 @@ local function unregister_cable(cable)
   end
 end
 
+-- Register/unregister a dashboard terminal. Tracked only for the IT coverage
+-- bonus tier below -- the GUI open/close logic lives in gui/dashboard.lua.
+local function register_dashboard(dashboard)
+  storage.dashboards = storage.dashboards or {}
+  storage.dashboards[dashboard.unit_number] = { entity = dashboard }
+end
+
+local function unregister_dashboard(dashboard)
+  if storage.dashboards then
+    storage.dashboards[dashboard.unit_number] = nil
+  end
+end
+
 -- Track sensor placement and find nearby assemblers
 function DataSystem.on_entity_built(entity)
   if entity.name == "data-sensor" then
     DataSystem.register_sensor(entity)
+  elseif entity.name == "dashboard-terminal" then
+    register_dashboard(entity)
   elseif is_server(entity) then
     DataSystem.register_server(entity)
   elseif is_cable(entity) then
@@ -77,6 +92,8 @@ end
 function DataSystem.on_entity_removed(entity)
   if entity.name == "data-sensor" then
     DataSystem.unregister_sensor(entity)
+  elseif entity.name == "dashboard-terminal" then
+    unregister_dashboard(entity)
   elseif is_server(entity) then
     DataSystem.unregister_server(entity)
   elseif is_cable(entity) then
@@ -371,6 +388,21 @@ function DataSystem.get_backlog_status()
   else
     return "normal", "Normal operation"
   end
+end
+
+-- IT coverage tier bonus (docs/05-MECHANICS.md's bonus tiers), before
+-- circuit-control.lua nets the debt penalty against it. Only the two lowest
+-- tiers are reachable with entities this mod currently has -- the higher
+-- ones (Basic Automation, Predictive, ...) need entities that don't exist
+-- yet (automation controllers, ML processors, ...).
+local COVERAGE_BONUS_FULL_MONITORING = 0.05  -- has a dashboard terminal
+local COVERAGE_BONUS_BASIC_MONITORING = 0.02 -- sensor coverage only
+
+function DataSystem.get_coverage_bonus()
+  if storage.dashboards and next(storage.dashboards) then
+    return COVERAGE_BONUS_FULL_MONITORING
+  end
+  return COVERAGE_BONUS_BASIC_MONITORING
 end
 
 -- Find entities of specific types within a radius of an entity

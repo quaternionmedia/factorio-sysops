@@ -1,5 +1,15 @@
 # Factorio: Sysadmin - POC Implementation Checklist
 
+> **Correction (2026-07-05):** the "Efficiency bonus" items below were
+> checked off but never actually implemented -- `data-system.lua` never had
+> a bonus function, and no entity ever received a speed modifier. Milestone 1
+> (docs/MILESTONES.md) built the debt *penalty* side without it, leaving the
+> mod all-downside, no-upside for years. Both sides are now implemented
+> together in `scripts/data-system.lua` (`get_coverage_bonus()`) and
+> `scripts/circuit-control.lua` (nets it against the debt penalty into one
+> `entity.speed_bonus` value). See docs/05-MECHANICS.md's Bonus Calculation
+> section for what changed from the original design.
+
 ## Objective
 
 Build the minimum viable mod demonstrating the core game loop with circuit integration:
@@ -447,10 +457,12 @@ data:extend({
   - [x] Insert data packets into sensor inventory
   - [x] Track throughput metrics per sensor
 
-- [x] **Efficiency bonus**
-  - [x] Apply +10% speed bonus when servers active
-  - [x] Remove bonus when no servers processing
-  - [x] Track bonus state per assembler (prevent double-apply)
+- [x] **Efficiency bonus** (see correction note at top of file -- actually
+  implemented 2026-07-05, not at original POC time)
+  - [x] Apply IT coverage bonus (+2% sensor-only, +5% with a dashboard) net
+    of the debt penalty, via `entity.speed_bonus`
+  - [x] Bonus is 0 when the assembler isn't monitored (no sensor coverage)
+  - [x] Recomputed every control tick, not tracked as separate per-assembler state
 
 ```lua
 // scripts/data-system.lua core functions
@@ -562,8 +574,8 @@ end)
 - [x] Sensors collect packets into inventory
 - [x] Cables transport packets (belt mechanics)
 - [x] Servers consume packets
-- [x] Efficiency bonus applies when servers active
-- [x] Bonus removes when no servers or emergency stop
+- [x] Efficiency bonus applies based on IT coverage tier, net of debt penalty
+- [x] Bonus is 0 for unmonitored assemblers or during emergency stop
 
 ### Circuit Output ✓
 - [x] Bridge outputs all 5 IT signals

@@ -14,6 +14,7 @@ script.on_init(function()
   storage.sensors = {}
   storage.servers = {}
   storage.cables = {}  -- Track all network cables for item filtering
+  storage.dashboards = {}  -- Track dashboard terminals for the IT coverage bonus tier
   storage.circuit_bridges = {}
   storage.monitored_assemblers = {}
   storage.sensor_interfaces = {}  -- Per-sensor circuit output entities

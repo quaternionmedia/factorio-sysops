@@ -28,7 +28,12 @@ See what's happening in your factory with dashboards, metrics, and alerts. Know 
 Create rules that respond to factory conditions. Integrate with the circuit network for powerful automation.
 
 ### Efficiency Bonuses
-Properly monitored and optimized factories get **speed bonuses** - up to +35% with full IT coverage.
+Properly monitored and optimized factories get **speed bonuses**, netted
+against a debt penalty into one continuous curve. Currently reachable: +2%
+with sensor coverage, +5% with a dashboard terminal. The full +35% ceiling
+needs entities (automation controllers, ML processors, orchestration
+controllers, quantum links) that don't exist yet -- see
+[05-MECHANICS](05-MECHANICS.md).
 
 ### New Challenges
 Cyber threats attack your IT infrastructure. Build firewalls, IDS, and security operations centers to defend.

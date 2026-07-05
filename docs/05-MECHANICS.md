@@ -148,29 +148,47 @@ Properly configured IT infrastructure provides **efficiency bonuses** to connect
 - **Labs**: Research speed bonus
 - **Robots**: Speed and charge rate bonus
 
-### Bonus Calculation
+### Bonus Calculation (as implemented, 2026-07-05)
+
+Only the two lowest tiers are reachable today -- the rest need entities this
+mod doesn't have yet (automation controllers, ML processors, orchestration
+controllers, quantum links). The originally-designed multiplicative formula
+below assumed a `coverage_percentage = monitored_entities / total_entities`
+term that would require iterating every assembling-machine on the surface
+(monitored or not) each tick -- real cost for a value only two tiers can
+currently use. The implemented formula is additive and per-assembler instead:
 
 ```
-effective_bonus = base_tier_bonus × (1 - debt_penalty) × coverage_percentage
+net_bonus = coverage_bonus - debt_penalty
 
 Where:
-- base_tier_bonus = tier bonus from table above
-- debt_penalty = technical_debt / 1000 (capped at 0.9)
-- coverage_percentage = monitored_entities / total_entities
+- coverage_bonus = 0.05 if any dashboard terminal exists, else 0.02 if the
+  assembler has sensor coverage, else the assembler isn't touched at all
+  (get_coverage_bonus() in data-system.lua)
+- debt_penalty   = (technical_debt / 1000) * 0.20, linear, no dead zone
+  (get_penalty() in technical-debt.lua)
 ```
+
+Applied via `entity.speed_bonus` in circuit-control.lua, netted against the
+debt penalty into one continuous curve -- a well-maintained, low-debt factory
+sits above baseline; a neglected one sinks below it. CIRCUIT_ENABLED
+assemblers keep the coverage bonus but are immune to the debt penalty (same
+immunity emergency-stop overrides already had).
 
 ### Example
 
-Factory with 500 entities:
-- 400 have sensors (80% coverage)
-- Full Monitoring tier (5% base bonus)
-- 100 technical debt (10% penalty)
+An assembler with sensor coverage and a dashboard terminal somewhere in the
+factory (Full Monitoring, 5% base), at 200 technical debt:
 
 ```
-effective_bonus = 5% × (1 - 0.1) × 0.8 = 3.6%
+debt_penalty = (200 / 1000) * 0.20 = 4%
+net_bonus    = 5% - 4% = +1%
 ```
 
-All 400 monitored entities get +3.6% speed.
+The original multiplicative formula (`base_tier_bonus × (1 - debt_penalty) ×
+coverage_percentage`) remains the aspirational design once the higher tiers'
+entities and a real per-surface coverage percentage are worth the cost of
+computing -- revisit if either becomes true.
 
 ---
 

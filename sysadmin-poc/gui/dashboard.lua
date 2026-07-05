@@ -3,6 +3,8 @@
 
 local Dashboard = {}
 
+local DataSystem = require("scripts.data-system")
+
 -- GUI element names
 local GUI_FRAME = "sysadmin_dashboard_frame"
 local GUI_METRICS = "sysadmin_dashboard_metrics"
@@ -156,10 +158,12 @@ function Dashboard.update(player)
   -- same save) -- skip rather than error; closing/reopening rebuilds it.
   local debt_label = metrics_table.value_debt
   if debt_label then
-    local penalty_str = debt_penalty > 0
-      and (" [-" .. math.floor(debt_penalty * 100) .. "% eff]")
-      or ""
-    debt_label.caption = debt_total .. " (" .. debt_level .. ")" .. penalty_str
+    -- Net efficiency: IT coverage bonus minus the debt penalty, the same
+    -- curve circuit-control.lua applies to NORMAL monitored assemblers.
+    local net_bonus = DataSystem.get_coverage_bonus() - debt_penalty
+    local bonus_str = " [" .. (net_bonus >= 0 and "+" or "-")
+      .. math.floor(math.abs(net_bonus) * 1000 + 0.5) / 10 .. "% eff]"
+    debt_label.caption = debt_total .. " (" .. debt_level .. ")" .. bonus_str
     if     debt_level == "critical" then debt_label.style.font_color = {1,   0.2, 0.2}
     elseif debt_level == "high"     then debt_label.style.font_color = {1,   0.5, 0}
     elseif debt_level == "moderate" then debt_label.style.font_color = {1,   1,   0}
