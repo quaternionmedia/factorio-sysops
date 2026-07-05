@@ -66,8 +66,10 @@ The following files were added or changed:
 
 Before moving to Milestone 2, verify Milestone 1 works correctly:
 
-1. Copy/symlink sysadmin-poc/ into Factorio mods folder and load a save
-2. Set up a test factory: assemblers → sensors → cables → servers
+1. Install/refresh the mod: `python sysadmin-poc/scripts/install-mod.py install`
+   (auto-detects the Factorio mods folder), then load a save
+2. Set up a test factory: assemblers → sensors → cables → servers -- or paste
+   the test blueprint below, which sets up two chains for step 5
 3. Disconnect the server (stop draining packets) and watch:
    - Data backlog climbs in dashboard
    - Technical Debt row increments (takes ~30s to start)
@@ -79,15 +81,33 @@ Before moving to Milestone 2, verify Milestone 1 works correctly:
 7. Run with 50+ sensors and check /time-usage for performance (target: <1ms on
    the 60-tick bucket and <0.5ms on the 10-tick bucket)
 
-Known potential issues to watch for:
-- "section.filters_count" may be 5 even after setting slot 6; if so, the slot 6
-  clear loop (1..filters_count) will miss it and you'll get stale values on
-  dashboard refresh. Workaround: change clear loop to iterate 1..10 or use
-  section.clear() if the API supports it.
-- The dashboard "value_debt" element reference works only if Dashboard.create()
-  has been called after the code change; existing open dashboards from before
-  the change will error on update. Closing and reopening the dashboard terminal
-  fixes it.
+### Test blueprint (steps 2-5)
+
+Two independent chains: Chain A (assembler/sensor/cables/server, y=0.5-4.5) is
+plain NORMAL -- its assembler should pause once the debt penalty kicks in.
+Chain B (y=6.5-10.5) has a constant combinator next to its sensor; wire it to
+the Chain B data-sensor (either wire color), then open the combinator and set
+its output signal to `signal-it-control` = 1 and enable it -- Chain B's
+assembler should keep running through the same debt pause, confirming step 5.
+A dashboard terminal and circuit bridge are included on Chain A for steps 3-4.
+
+```
+0eNqlllFv0zAQx7/KqS/bpLlburZrJ/EwNhBIjCEYTwghxzkaq4kd2RdKNfW7c05SkYlWbcJD1Tix/7+789+XPA/irMTCaUODG3geaMKcL1p3z2GQyRizcPfL2ssk1wY+Pd6BgAedoSdrECK4x5jgiYdhQYJeOV2QtiYse1pZeP8EKpXaePhpHRBP1GbB/yo1WskMkrD+tKV4BgU6SKzyF+9uP94/vn0rHr5+eHovPr/59DjMkyHcBT24hVOyxTmsX10OJ2I8nJzdwMfHzw+3H87BWFDaqVITKGvI2QyEAE0epPeYxxkTfGrLLIFClh7BGoV1KAUamdEallotPWizxb2G09gS2TwQp0yMLivkSjsESjGAPEkTiHmsjaSQrq0ebRUSSVJ4NJ4fnaLmR65er2xm3dl5mGzAIzWCW50TD7akoqQg6PWCIxSaxDa1V7wN0iTAkXNmnGZIllLtoWad7Eh7iViAK42pdiN1tlykFdXLfFuJUJkh3GvPIIOKLhw2V/VMdL/Q+RMuUghNBbivIlwF0ZAsxFItM7uowltJUmktrTKdx5UcK3DxK7176dPYSpewnRybjc0Rlt01G/na6WTB1MwSTIfBbTqUnH327XlQF6VyMq0LDOarHM2zDCdUOVt6rUQd9GATlpsEf/OTiAc7FX5pRyXfa4n8U/wXSqPNdx6hIU0am8iq0fqHKfOYuUxrqTW7wtUSuVSpNiiiQCus180Zeh4EYbYa317XV4HIpdNNms4asUDpxCpFrOL5FzpqQVsmPMAaMWun3FVL7qf0JPh4oyPcLRi9EAxdgi2vminjnYBxC2CQVtYtReWvnYBRd8CkE+CqO2DaCTDuDrjuBJh0B8w6bfK0O2C+73Du0p8d8mR0+cLjTSsR1LSSA1Yf75Vtn9fmnSLiqhUdsMp+ydH/tYBprxYQXfXqAbO9WYx7NoHZsf6IJj27wPGEac82cDzhumcfOJ4w69kIjifMe3aCowmjyz6tYK81Ry/ObPNZJv5+Th2wfPiw21Rv8vB5U8+ZTEfz8Xw+4d84up5uNn8A7+GJeQ==
+```
+
+Built programmatically (entity list/positions reusing the same fields and
+belt-inserter-server spacing as the "Sysadmin POC - Minimal Setup" blueprint
+in docs/POC-QUICKSTART.md) and round-trip-verified as valid Factorio
+blueprint encoding -- not yet pasted into an actual game. If anything looks
+off on paste, that's the thing to check first.
+
+Known issues (fixed 2026-07-05, no longer apply):
+- ~~"section.filters_count" may be 5 even after setting slot 6...~~ Fixed:
+  `circuit-interface.lua` now clears a fixed 1..10 range instead of trusting
+  `filters_count`.
+- ~~The dashboard "value_debt" element reference...~~ Fixed: `dashboard.lua`
+  now guards the debt row and skips it if absent instead of erroring; closing
+  and reopening the dashboard terminal still rebuilds it with the row.
 
 ---
 
