@@ -1,0 +1,9 @@
+{
+  "name": "sysadmin-poc",
+  "version": "0.0.1",
+  "title": "Sysadmin POC",
+  "author": "Dev",
+  "description": "IT Infrastructure proof of concept - Add IT infrastructure to enhance your factory",
+  "factorio_version": "2.0",
+  "dependencies": ["base >= 2.0"]
+}
