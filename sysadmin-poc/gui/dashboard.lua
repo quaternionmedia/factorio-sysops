@@ -151,16 +151,20 @@ function Dashboard.update(player)
   metrics_table.value_backlog.caption = tostring(metrics.data_backlog or 0)
   metrics_table.value_processed.caption = tostring(metrics.total_processed or 0)
 
-  -- Update debt row with color coding
+  -- Update debt row with color coding. value_debt is absent on a dashboard
+  -- GUI built before this row existed (open across a mod update within the
+  -- same save) -- skip rather than error; closing/reopening rebuilds it.
   local debt_label = metrics_table.value_debt
-  local penalty_str = debt_penalty > 0
-    and (" [-" .. math.floor(debt_penalty * 100) .. "% eff]")
-    or ""
-  debt_label.caption = debt_total .. " (" .. debt_level .. ")" .. penalty_str
-  if     debt_level == "critical" then debt_label.style.font_color = {1,   0.2, 0.2}
-  elseif debt_level == "high"     then debt_label.style.font_color = {1,   0.5, 0}
-  elseif debt_level == "moderate" then debt_label.style.font_color = {1,   1,   0}
-  else                                 debt_label.style.font_color = {0.6, 1,   0.6}
+  if debt_label then
+    local penalty_str = debt_penalty > 0
+      and (" [-" .. math.floor(debt_penalty * 100) .. "% eff]")
+      or ""
+    debt_label.caption = debt_total .. " (" .. debt_level .. ")" .. penalty_str
+    if     debt_level == "critical" then debt_label.style.font_color = {1,   0.2, 0.2}
+    elseif debt_level == "high"     then debt_label.style.font_color = {1,   0.5, 0}
+    elseif debt_level == "moderate" then debt_label.style.font_color = {1,   1,   0}
+    else                                 debt_label.style.font_color = {0.6, 1,   0.6}
+    end
   end
 
   -- Update status label (debt overrides backlog warnings when higher severity)

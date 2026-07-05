@@ -4,6 +4,13 @@
 local CircuitInterface = {}
 local DataSystem = require("scripts.data-system")
 
+-- section.filters_count reflects how many slots were filled as of the last
+-- write, which can lag a slot that was just added (e.g. slot 6 added by
+-- Milestone 1) and leave it holding a stale value across ticks. Clearing a
+-- fixed range that comfortably covers every signal this mod ever writes
+-- sidesteps the lag entirely.
+local MAX_SIGNAL_SLOTS = 10
+
 -- CircuitControl is loaded lazily to avoid circular dependency
 local CircuitControl = nil
 
@@ -45,7 +52,7 @@ function CircuitInterface.update_signals()
         local section = control.get_section(1)
         if section then
           -- Clear existing signals first
-          for i = 1, section.filters_count do
+          for i = 1, MAX_SIGNAL_SLOTS do
             section.clear_slot(i)
           end
 
@@ -143,7 +150,7 @@ function CircuitInterface.update_sensor_signals()
           local section = control.get_section(1)
           if section then
             -- Clear existing signals
-            for i = 1, section.filters_count do
+            for i = 1, MAX_SIGNAL_SLOTS do
               section.clear_slot(i)
             end
 
