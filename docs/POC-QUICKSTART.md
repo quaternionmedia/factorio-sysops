@@ -2,7 +2,9 @@
 
 ## Prerequisites
 
-1. Install the mod by copying the `sysadmin-poc` folder to your Factorio mods directory
+1. Install the mod: `python sysadmin-poc/scripts/install-mod.py install` (auto-detects
+   your Factorio mods folder; pass `--dest PATH` to override, `locate` to just print
+   detected paths)
 2. Start a new game or load an existing save
 3. Research "IT Basics" technology (requires Electronics and Circuit Network)
 

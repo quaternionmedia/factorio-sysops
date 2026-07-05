@@ -10,6 +10,10 @@ Mod source lives in [sysadmin-poc/](sysadmin-poc/). Status: design complete
 through Phase 3 (automation); Milestone 1 (technical debt) implemented,
 pending in-game verification — see [docs/NEXT-PHASE.md](docs/NEXT-PHASE.md).
 
+Install into your local Factorio: `python sysadmin-poc/scripts/install-mod.py install`
+(auto-detects the mods folder, mirroring datafactorio's `locate`/`install-mod`
+commands).
+
 ## Sibling projects
 
 This mod is one of three standalone-but-composable Factorio projects. Each
