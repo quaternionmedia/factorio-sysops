@@ -73,22 +73,37 @@ Before moving to Milestone 2, verify Milestone 1 works correctly:
 3. Disconnect the server (stop draining packets) and watch:
    - Data backlog climbs in dashboard
    - Technical Debt row increments (takes ~30s to start)
-   - At debt > 500, some assemblers should pause (check with /sysadmin-control)
+   - The debt row's `[+X% eff]`/`[-X% eff]` reading falls as debt rises (net
+     efficiency = IT coverage bonus minus a debt penalty that scales linearly
+     from 0% at debt=0 to -20% at debt=1000 -- no threshold, no pausing;
+     check `entity.speed_bonus` via `/sysadmin-stats` or the assembler's own
+     tooltip, not `/sysadmin-control`, which only shows on/off state)
    - Circuit bridge slot 6 should show signal-technical-debt > 0
-4. Reconnect the server: confirm debt recovers and assemblers resume
-5. Test that circuit-controlled (CIRCUIT_ENABLED) assemblers are NOT paused by debt
+4. Reconnect the server: confirm debt recovers and the efficiency reading
+   climbs back toward baseline
+5. Test that circuit-controlled (CIRCUIT_ENABLED) assemblers keep their IT
+   coverage bonus and are NOT hit by the debt penalty
 6. Test that /sysadmin-stats still works without errors
 7. Run with 50+ sensors and check /time-usage for performance (target: <1ms on
    the 60-tick bucket and <0.5ms on the 10-tick bucket)
 
+Note (2026-07-05): debt no longer pauses assemblers. It nets against an IT
+coverage bonus (+2% sensor coverage, +5% with a dashboard terminal) into one
+continuous `entity.speed_bonus` -- see docs/05-MECHANICS.md's Bonus
+Calculation section. This is also the first live test of that
+`entity.speed_bonus` assumption; if assemblers show no speed change at all
+and `/sysadmin-stats` or the log has a `speed_bonus assignment failed`
+warning, that assumption was wrong and circuit-control.lua's
+`apply_assembler_control` needs a different Factorio API call.
+
 ### Test blueprint (steps 2-5)
 
 Two independent chains: Chain A (assembler/sensor/cables/server, y=0.5-4.5) is
-plain NORMAL -- its assembler should pause once the debt penalty kicks in.
-Chain B (y=6.5-10.5) has a constant combinator next to its sensor; wire it to
-the Chain B data-sensor (either wire color), then open the combinator and set
-its output signal to `signal-it-control` = 1 and enable it -- Chain B's
-assembler should keep running through the same debt pause, confirming step 5.
+plain NORMAL -- its net efficiency should visibly fall as debt rises. Chain B
+(y=6.5-10.5) has a constant combinator next to its sensor; wire it to the
+Chain B data-sensor (either wire color), then open the combinator and set its
+output signal to `signal-it-control` = 1 and enable it -- Chain B's assembler
+should keep its coverage bonus and stay debt-immune, confirming step 5.
 A dashboard terminal and circuit bridge are included on Chain A for steps 3-4.
 
 ```
