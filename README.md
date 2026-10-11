@@ -14,6 +14,10 @@ Install into your local Factorio: `python sysadmin-poc/scripts/install-mod.py in
 (auto-detects the mods folder, mirroring datafactorio's `locate`/`install-mod`
 commands).
 
+For a no-install local packaging check and human-owned benchmark handoff, see
+[docs/LOCAL-POC.md](docs/LOCAL-POC.md). It does not launch Factorio or modify an
+installed mod.
+
 ## Sibling projects
 
 This mod is one of three standalone-but-composable Factorio projects. Each
